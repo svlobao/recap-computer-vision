@@ -1,6 +1,9 @@
 import os
 import cv2
+import random
+import logging as log
 import pandas as pd
+import numpy as np
 
 
 def loadAssets():
@@ -9,11 +12,14 @@ def loadAssets():
     _healthyPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Healthy"
     _tumorPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Brain Tumor"
 
+    _df_metadata = pd.read_csv(_metadataPath)
+    _df_metadataRGB = pd.read_csv(_metadataRGBPath)
+
     assets = [
-        _metadataPath,
-        _metadataRGBPath,
         _healthyPath,
-        _tumorPath
+        _tumorPath,
+        _df_metadata,
+        _df_metadataRGB,
     ]
 
     return assets
@@ -24,39 +30,75 @@ def loadImages(path: str):
     for img in os.listdir(path):
         assert img is not None, f"Could not load img ({img})."
         _images.append(
-            cv2.imread(os.path.join(path, img))
+            cv2.imread(os.path.join(path, img), cv2.IMREAD_GRAYSCALE)
         )
     return _images
 
 
-def displayImage(img, startPos=-2, ):
+def displayImage(img, stack=1):
+    '''
+        img: is the image list (List<Mat>) that will serve as a source for displaying
+
+        stack: is the number of images that should be displayed in one kernel (Maximum is 5)
+    '''
     assert img is not None, f"No image. Try again."
-    cv2.imshow('Sample', img)
+
+    assert stack >= 1 and stack <= 5, f"You can only display 1 up to 5 images at a time. Stack should not be attributed a negative number or zero."
+
+    if (stack > 1):
+        # display 2 or more images
+        randomIndexes = random.sample(range(len(img)), stack)
+        subset = [img[i] for i in randomIndexes]
+        img = np.stack((subset))
+
+    cv2.imshow('Sample', img[0])
     cv2.waitKey()
     return
 
 
-def getHistogram(img):
-    _hist = cv2.calcHist(img, [0], None, [256], [0, 256])
-    return _hist
+# def getHistogram(img, equalizeHistogram=False):
+#     _hist = cv2.calcHist(img, [0], None, [256], [0, 256])
+#     return _hist # retorna histograma
+
+
+def preProcess(imageList: list, eqHistogram=False, resize=()):
+
+    if (eqHistogram):
+        # may apply to the list directly
+        for img in imageList:
+            img = cv2.equalizeHist(img)
+
+    if (resize):
+        # needs to resize one by one
+        imageList = [cv2.resize(_, resize) for _ in imageList]
+
+    return imageList
 
 
 if (__name__ == "__main__"):
 
     assets = loadAssets()
 
-    df_metadata = pd.read_csv(assets[0])
-    df_metadataRGB = pd.read_csv(assets[1])
-
-    healthyImages = loadImages(assets[2])
-    tumorImages = loadImages(assets[3])
-
-    histHealthyImages = getHistogram(healthyImages)
-    histTumorImages = getHistogram(tumorImages)
+    healthyImages = loadImages(assets[0])
+    tumorImages = loadImages(assets[1])
 
     print(
-        len(histHealthyImages),
-        len(histTumorImages),
-        type(histHealthyImages),
-        type(histTumorImages),
+        type(tumorImages),
+        type(tumorImages[0])
+    )
+
+    # healthyPreProcessed = preProcess(
+    #     imageList=healthyImages,
+    #     eqHistogram=False,
+    #     resize=(350, 350)
+    # )
+
+    turmoPreProcessed = preProcess(
+        imageList=tumorImages,
+        eqHistogram=True,
+        resize=(350, 350),
+    )
+
+    displayImage(
+        img=turmoPreProcessed,
     )
