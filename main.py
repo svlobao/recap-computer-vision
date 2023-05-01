@@ -1,7 +1,7 @@
 import os
 import cv2
 import random
-import logging as log
+import logging
 import pandas as pd
 import numpy as np
 
@@ -40,19 +40,20 @@ def displayImage(img, stack=1):
         img: is the image list (List<Mat>) that will serve as a source for displaying
 
         stack: is the number of images that should be displayed in one kernel (Maximum is 5)
+
     '''
     assert img is not None, f"No image. Try again."
 
     assert stack >= 1 and stack <= 5, f"You can only display 1 up to 5 images at a time. Stack should not be attributed a negative number or zero."
 
-    if (stack > 1):
-        # display 2 or more images
-        randomIndexes = random.sample(range(len(img)), stack)
-        subset = [img[i] for i in randomIndexes]
-        img = np.stack((subset))
+    randomIndexes = random.sample(range(len(img)-1), stack)
+    subset = [img[i] for i in randomIndexes]
+    stacked_subset = np.hstack(subset)
 
-    cv2.imshow('Sample', img[0])
+    cv2.imshow(f'Images', stacked_subset)
+
     cv2.waitKey()
+
     return
 
 
@@ -82,11 +83,6 @@ if (__name__ == "__main__"):
     healthyImages = loadImages(assets[0])
     tumorImages = loadImages(assets[1])
 
-    print(
-        type(tumorImages),
-        type(tumorImages[0])
-    )
-
     # healthyPreProcessed = preProcess(
     #     imageList=healthyImages,
     #     eqHistogram=False,
@@ -101,4 +97,5 @@ if (__name__ == "__main__"):
 
     displayImage(
         img=turmoPreProcessed,
+        stack=3,
     )
