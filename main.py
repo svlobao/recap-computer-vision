@@ -1,16 +1,16 @@
 import os
 import cv2
 import random
-import logging
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def loadAssets():
     _metadataPath = r"data/metadata.csv"
     _metadataRGBPath = r"data/metadata_rgb_only.csv"
-    _healthyPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Healthy"
-    _tumorPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Brain Tumor"
+    _healthyPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Healthy/"
+    _tumorPath = r"data/Brain Tumor Data Set/Brain Tumor Data Set/Brain Tumor/"
 
     _df_metadata = pd.read_csv(_metadataPath)
     _df_metadataRGB = pd.read_csv(_metadataRGBPath)
@@ -57,11 +57,6 @@ def displayImage(img, stack=1):
     return
 
 
-# def getHistogram(img, equalizeHistogram=False):
-#     _hist = cv2.calcHist(img, [0], None, [256], [0, 256])
-#     return _hist # retorna histograma
-
-
 def preProcess(imageList: list, eqHistogram=False, resize=()):
 
     if (eqHistogram):
@@ -76,26 +71,49 @@ def preProcess(imageList: list, eqHistogram=False, resize=()):
     return imageList
 
 
-if (__name__ == "__main__"):
-
+def splitTrainTestValidation() -> None:
     assets = loadAssets()
 
-    healthyImages = loadImages(assets[0])
-    tumorImages = loadImages(assets[1])
+    healthyFileNames = os.listdir(assets[0])
+    tumorFileNames = os.listdir(assets[1])
 
-    # healthyPreProcessed = preProcess(
-    #     imageList=healthyImages,
-    #     eqHistogram=False,
-    #     resize=(350, 350)
-    # )
+    allFiles = healthyFileNames + tumorFileNames
+    labels = [0] * len(healthyFileNames) + [1] * len(tumorFileNames)
 
-    turmoPreProcessed = preProcess(
-        imageList=tumorImages,
-        eqHistogram=True,
-        resize=(350, 350),
+    trainFiles, testFiles, trainLabels, testLabels = train_test_split(
+        allFiles,
+        labels,
+        test_size=0.2,
+        random_state=42,
     )
 
-    displayImage(
-        img=turmoPreProcessed,
-        stack=3,
+    trainFiles, valFiles, trainLabels, valLabels = train_test_split(
+        trainFiles,
+        trainLabels,
+        test_size=0.15,
+        random_state=42,
     )
+
+    return print(
+        "\n\n",
+        len(allFiles),
+        "\t",
+        len(allFiles)/len(allFiles),
+        "\n\n",
+        len(trainFiles),
+        "\t",
+        len(trainFiles)/len(allFiles),
+        "\n\n",
+        len(testFiles),
+        "\t",
+        len(testFiles)/len(allFiles),
+        "\n\n",
+        len(valFiles),
+        "\t",
+        len(valFiles)/len(allFiles),
+        "\n\n",
+    )
+
+
+if (__name__ == "__main__"):
+    splitTrainTestValidation()
